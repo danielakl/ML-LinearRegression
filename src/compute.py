@@ -1,9 +1,32 @@
-import numpy as np
 import tensorflow as tf
+import numpy as np
 
-# Observed/training input and output
-x_train = np.mat([[1], [1.5], [2], [3], [4], [5], [6]])
-y_train = np.mat([[5], [3.5], [3], [4], [3], [1.5], [2]])
+
+x_train = np.mat([[0.0] for i in range(0, 1000)])
+y_train = np.mat([[0.0] for j in range(0, 1000)])
+
+
+filename_queue = tf.train.string_input_producer(["../res/length_weight.csv"])
+reader = tf.TextLineReader(1)
+key, value = reader.read(filename_queue)
+
+record_defaults = [[1.0], [1.0]]
+col1, col2 = tf.decode_csv(
+    value, record_defaults=record_defaults)
+features = tf.stack([col1])
+
+
+with tf.Session() as sess:
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+
+    for i in range(0, 1000):
+        example, label = sess.run([features, col2])
+        x_train[i][0] = example
+        y_train[i][0] = label
+
+    coord.request_stop()
+    coord.join(threads)
 
 
 class LinearRegressionModel:
@@ -26,7 +49,7 @@ class LinearRegressionModel:
 model = LinearRegressionModel()
 
 # Training: adjust the model so that its loss is minimized
-minimize_operation = tf.train.GradientDescentOptimizer(0.01).minimize(model.loss)
+minimize_operation = tf.train.GradientDescentOptimizer(0.0000001).minimize(model.loss)
 
 # Create session object for running TensorFlow operations
 session = tf.Session()
@@ -34,7 +57,7 @@ session = tf.Session()
 # Initialize tf.Variable objects
 session.run(tf.global_variables_initializer())
 
-for epoch in range(500):
+for epoch in range(100000):
     session.run(minimize_operation, {model.x: x_train, model.y: y_train})
 
 # Evaluate training accuracy
